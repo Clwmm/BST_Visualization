@@ -17,6 +17,8 @@ sf::Vertex line[2];
 
 float viewSize = 150.f;
 float nextViewSize = 0.f;
+sf::Vector2f viewPosition(0.f, 0.f);
+sf::Vector2f nextViewPosition(0.f, 0.f);
 int maxDepth = 0;
 
 constexpr float offset_x_multi = 15.f;
@@ -37,45 +39,29 @@ float getSizeY()
     return static_cast<float>(maxDepth) * offset_y;
 }
 
-void drawCircle(sf::RenderWindow& window, const sf::Vector2f& position, const int& key)
+bool validateText(const char* input)
 {
-    circle.setPosition(position);
-    circle.setFillColor(sf::Color::White);
-    circle.setRadius(circle_size);
-    circle.setOrigin(circle_size, circle_size);
-    window.draw(circle);
-
-    circle.setPosition(position);
-    circle.setFillColor(sf::Color::Black);
-    circle.setRadius(circle_size - 2.f);
-    circle.setOrigin(circle_size - 2.f, circle_size - 2.f);
-    window.draw(circle);
-
-    std::string strText = std::to_string(key);
-    if (strText.size() < 2)
-        strText = "0" + strText;
-    text.setString(strText);
-    text.setPosition(sf::Vector2f(position.x - 13, position.y - 15));
-    window.draw(text);
-}
-
-bool containsNumber(const char* input)
-{
+    if (*input == '\0')
+        return false;
     while (*input) {
-        if (std::isdigit(*input)) {
-            return true;
+        if (!std::isdigit(*input)) {
+            return false;
         }
         ++input;
     }
-    return false;
+    return true;
 }
 
 int main()
 {
     sf::RenderWindow window(sf::VideoMode(1100, 1100), "Window Title");
+    
     ImGui::SFML::Init(window);
-    sf::View view(sf::Vector2f(0.f, 0.f), sf::Vector2f(viewSize, viewSize));
 
+    ImGuiIO& io = ImGui::GetIO();
+    io.FontGlobalScale = 2.f;
+
+    sf::View view(viewPosition, sf::Vector2f(viewSize, viewSize));
     window.setView(view);
 
     sf::Font font;
@@ -86,6 +72,7 @@ int main()
 
     sf::Clock clock;
     sf::Clock imguiClock;
+    std::string alert = "";
     float deltatime = 0.f;
 
     sf::Text insertText;
@@ -103,7 +90,7 @@ int main()
     circle.setOrigin(10.f, 10.f);
 
     vbt::VisualBinaryTree<int> vbt(font);
-    /*vbt.insert(50);
+    vbt.insert(50);
     vbt.insert(25);
     vbt.insert(75);
     vbt.insert(10);
@@ -117,7 +104,8 @@ int main()
     vbt.insert(55);
     vbt.insert(65);
     vbt.insert(80);
-    vbt.insert(95);*/
+    vbt.insert(95);
+
 
     std::string getLineStr;
     std::string word;
@@ -160,33 +148,96 @@ int main()
         ImGui::SFML::Update(window, imguiClock.restart());
 
         ImGui::Begin("Visual Binary Tree");
-
-        ImGui::InputText("Insert:", inputCharText, IM_ARRAYSIZE(inputCharText));
+        ImGui::InputText("##", inputCharText, IM_ARRAYSIZE(inputCharText));
+        ImGui::Columns(4);
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.6f, 0.98f, 1.0f, 1.0f));
         if (ImGui::Button("Insert"))
         {
-            if (containsNumber(inputCharText))
+            if (validateText(inputCharText))
+            {
                 vbt.insert(std::stoi(inputCharText));
+                alert = "Added: " + std::string(inputCharText);
+            }
+                
         }
+            
+        ImGui::PopStyleColor();
+        ImGui::NextColumn();
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
+        if (ImGui::Button("Delete"))
+        {
+            if (validateText(inputCharText))
+            {
+                if (vbt.remove(std::stoi(inputCharText)))
+                    alert = "Removed: " + std::string(inputCharText);
+                else
+                    alert = "Not found: " + std::string(inputCharText);
+            }
+        }
+        ImGui::PopStyleColor();
+        ImGui::NextColumn();
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 0.0f, 1.0f));
+        if (ImGui::Button("Search"))
+        {
+            if (validateText(inputCharText))
+            {
+                vbt.search(std::stoi(inputCharText));
+                /*if (vbt.search(std::stoi(inputCharText)))
+                    alert = "Found: " + std::string(inputCharText);
+                else
+                    alert = "Not found: " + std::string(inputCharText);*/
+            }
+        }
+        ImGui::PopStyleColor();
+        ImGui::NextColumn();
+        if (ImGui::Button("Clear"))
+        {
+            vbt.clear();
+            alert = "Tree cleared";
+        }
+        ImGui::Columns(1);
+            
+        ImGui::Text(alert.c_str());
 
+
+        std::string temp;
+        temp = "Size: " + std::to_string(vbt.getSize());
+        ImGui::Text(temp.c_str());
+        temp = "Depth: " + std::to_string(vbt.depth());
+        ImGui::Text(temp.c_str());
+        temp = "Minimum: " + std::to_string(vbt.minimum());
+        ImGui::Text(temp.c_str());
+        temp = "Maximum: " + std::to_string(vbt.maximum());
+        ImGui::Text(temp.c_str());
         ImGui::Text("Inorder:");
         ImGui::Text(vbt.inorder().c_str());
-        ImGui::Text("Preorder:");
-        ImGui::Text(vbt.preorder().c_str());
-        ImGui::Text("Postorder:");
-        ImGui::Text(vbt.postorder().c_str());
         ImGui::End();
 
-        vbt.update(deltatime);
+        vbt.update(deltatime, alert);
 
         maxDepth = vbt.depth();
 
+        if (vbt.getRoot())
+        {
+            sf::Vector2f dir = vbt.getRoot()->position - viewPosition;
+            float dist = std::sqrt(dir.x * dir.x + dir.y * dir.y);
+
+            if (dist > 1.0f)
+            {
+                dir /= dist;
+                viewPosition.x += dir.x * vbt::MOVE_SPEED * deltatime;
+                viewPosition.y += dir.y * vbt::MOVE_SPEED * deltatime;
+            }
+
+            view.setCenter(viewPosition);
+        }
+        
         nextViewSize = std::max(getSizeX(), getSizeY()) + 100.f;
         viewSize += (nextViewSize - viewSize) * deltatime;
         view.setSize(sf::Vector2f(viewSize, viewSize));
         window.setView(view);
 
         window.clear(sf::Color(18, 33, 43));
-        drawCircle(window, sf::Vector2f(circle_size - (viewSize / 2), circle_size - (viewSize / 2)), insertKey);
         vbt.draw(window);
         ImGui::SFML::Render(window);
         window.display();

@@ -4,25 +4,26 @@
 #include "SFML/Graphics.hpp"
 #include <string>
 #include <iostream>
+#include <cmath>
 
 
 namespace vbt
 {
-	constexpr float circle_size = 22.f;
-	constexpr float offset_x_multi = 15.f;
-	constexpr float offset_y = 80.f;
+	constexpr float CIRCLE_SIZE = 23.f;
+	constexpr float OFFSET_X_MULTI = 15.f;
+	constexpr float OFFSET_Y = 80.f;
 	constexpr float MOVE_SPEED = 100.f;
+	constexpr float ANIMATION_SPEED = 0.8f;
+
+	enum class Status
+	{
+		None, Insert, Search, Delete
+	};
 
 	template <class T>
 	class VisualBinaryNode
 	{
 	public:
-
-		enum class Status
-		{
-			None, Insert, Search, Delete
-		};
-
 		T key;
 		VisualBinaryNode* right = nullptr;
 		VisualBinaryNode* left = nullptr;
@@ -49,6 +50,8 @@ namespace vbt
 			text.setCharacterSize(24);
 			text.setString(strText);
 			text.setPosition(sf::Vector2f(position.x - 13, position.y - 15));
+
+			circle.setPointCount(60);
 		}
 
 		void update(const float& deltaTime)
@@ -56,7 +59,7 @@ namespace vbt
 			if (this->repositioning)
 			{
 				sf::Vector2f dir = newPosition - position;
-				float dist = sqrt(dir.x * dir.x + dir.y * dir.y);
+				float dist = std::sqrt(dir.x * dir.x + dir.y * dir.y);
 
 				if (dist > 1.0f)
 				{
@@ -71,18 +74,34 @@ namespace vbt
 
 		void draw(sf::RenderWindow& window)
 		{
-			circle.setPosition(position);
-			circle.setFillColor(sf::Color::White);
-			circle.setRadius(circle_size);
-			circle.setOrigin(circle_size, circle_size);
-			window.draw(circle);
+			if (this->status == Status::Search)
+			{
+				circle.setPosition(position);
+				circle.setFillColor(sf::Color::Yellow);
+				circle.setRadius(CIRCLE_SIZE);
+				circle.setOrigin(CIRCLE_SIZE, CIRCLE_SIZE);
+				window.draw(circle);
+			}
+			else
+			{
+				circle.setPosition(position);
+				circle.setFillColor(sf::Color::White);
+				circle.setRadius(CIRCLE_SIZE);
+				circle.setOrigin(CIRCLE_SIZE, CIRCLE_SIZE);
+				window.draw(circle);
+			}
+			
 
 			circle.setPosition(position);
 			circle.setFillColor(sf::Color::Black);
-			circle.setRadius(circle_size - 2.f);
-			circle.setOrigin(circle_size - 2.f, circle_size - 2.f);
+			circle.setRadius(CIRCLE_SIZE - 3.f);
+			circle.setOrigin(CIRCLE_SIZE - 3.f, CIRCLE_SIZE - 3.f);
 			window.draw(circle);
 
+			std::string strText = std::to_string(this->key);
+			if (strText.size() < 2)
+				strText = "0" + strText;
+			text.setString(strText);
 			text.setPosition(sf::Vector2f(position.x - 13, position.y - 15));
 			window.draw(text);
 		}
@@ -100,10 +119,36 @@ namespace vbt
 		sf::Vertex line[2];
 		sf::Font font;
 
+		int size = 0;
+
+		struct UpdateStatus
+		{
+			Status status = Status::None;
+			node_ptr actual_node = nullptr;
+			node_ptr previous_node = nullptr;
+			T x;
+			float time = 0.f;
+
+			void clear()
+			{
+				if (this->actual_node)
+					this->actual_node->status = Status::None;
+				if (this->previous_node)
+					this->previous_node->status = Status::None;
+				this->status = Status::None;
+				this->actual_node = nullptr;
+				this->previous_node = nullptr;
+				this->time = 0.f;
+				this->x = NULL;
+			}
+		};
+
+		UpdateStatus status;
+
 		void repositioning(const int& depth, node_ptr node)
 		{
-			float offsetX = std::pow(static_cast<float>(depth), 2) * offset_x_multi;
-			float offsetY = offset_y;
+			float offsetX = std::pow(static_cast<float>(depth), 2) * OFFSET_X_MULTI;
+			float offsetY = OFFSET_Y;
 
 			if (node == nullptr)
 				return;
@@ -127,11 +172,11 @@ namespace vbt
 		template <class U>
 		void insert_left(U&& x, node_ptr node, node_ptr parent)
 		{
-			float offsetX = std::pow(static_cast<float>(actualDepth), 2) * offset_x_multi;
+			float offsetX = std::pow(static_cast<float>(actualDepth), 2) * OFFSET_X_MULTI;
 			--this->actualDepth;
 			if (node == nullptr)
 			{
-				node = new VisualBinaryNode<T>(std::forward<U>(x), sf::Vector2f(parent->position.x - offsetX, parent->position.y + offset_y), this->font);
+				node = new VisualBinaryNode<T>(std::forward<U>(x), sf::Vector2f(parent->position.x - offsetX, parent->position.y + OFFSET_Y), this->font);
 				parent->left = node;
 				node->parent = parent;
 				return;
@@ -145,11 +190,11 @@ namespace vbt
 		template <class U>
 		void insert_right(U&& x, node_ptr node, node_ptr parent)
 		{
-			float offsetX = std::pow(static_cast<float>(actualDepth), 2) * offset_x_multi;
+			float offsetX = std::pow(static_cast<float>(actualDepth), 2) * OFFSET_X_MULTI;
 			--this->actualDepth;
 			if (node == nullptr)
 			{
-				node = new VisualBinaryNode<T>(std::forward<U>(x), sf::Vector2f(parent->position.x + offsetX, parent->position.y + offset_y), this->font);
+				node = new VisualBinaryNode<T>(std::forward<U>(x), sf::Vector2f(parent->position.x + offsetX, parent->position.y + OFFSET_Y), this->font);
 				parent->right = node;
 				node->parent = parent;
 				return;
@@ -187,6 +232,151 @@ namespace vbt
 				this->inorder_(node->left, text);
 				this->inorder_(node->right, text);
 				text += std::to_string(node->key) + " ";
+			}
+		}
+
+		void searchRecursive(node_ptr node, const T& x, std::string& alert)
+		{
+			if (status.previous_node)
+				status.previous_node->status = Status::None;
+
+			if (node != nullptr)
+				node->status = Status::Search;
+			else
+			{
+				status.status = Status::None;
+				alert = "Not found: " + std::to_string(x);
+				return;
+			}
+			if (node->key == x)
+			{
+				status.status = Status::None;
+				alert = "Found: " + std::to_string(x);
+				return;
+			}
+
+			status.previous_node = node;
+
+			if (x < node->key)
+				status.actual_node = node->left;
+			else
+				status.actual_node = node->right;
+		}
+
+		bool remove_(node_ptr node, const T& key)
+		{
+			if (node == nullptr)
+				return false;
+
+			if (node->key > key)
+				return remove_(node->left, key);
+			if (node->key < key)
+				return remove_(node->right, key);
+
+			--size;
+
+			// ONLY ONE CHILD EXISTS
+			if (node->left == nullptr && node->right != nullptr)
+			{
+				node_ptr right = node->right;
+				if (node == root)
+				{
+					right->parent = nullptr;
+					root = right;
+					delete node;
+					return true;
+				}
+				right->parent = node->parent;
+				if (node->parent->right == node)
+					node->parent->right = right;
+				else
+					node->parent->left = right;
+				delete node;
+				return true;
+			}
+			else if (node->right == nullptr && node->left != nullptr)
+			{
+				node_ptr left = node->left;
+				if (node == root)
+				{
+					left->parent = nullptr;
+					root = left;
+					delete node;
+					return true;
+				}
+				left->parent = node->parent;
+				if (node->parent->right == node)
+					node->parent->right = left;
+				else
+					node->parent->left = left;
+				delete node;
+				return true;
+			}
+			// NODE IS A LEAF
+			else if (node->right == nullptr && node->left == nullptr)
+			{
+				if (node == root)
+				{
+					delete node;
+					root = nullptr;
+					return true;
+				}
+				if (node->parent->right == node)
+					node->parent->right = nullptr;
+				else
+					node->parent->left = nullptr;
+				delete node;
+				return true;
+			}
+			// NODE HAVE BOTH CHILDS
+			else
+			{
+				Iterator it(node);
+				++it;
+				node_ptr successor = *it;
+				
+				if (successor == node->right)
+				{
+					node->key = successor->key;
+					node->position = successor->position;
+					if (successor->right)
+					{
+						node->right = successor->right;
+						node->right->parent = node;
+					}
+					else
+						node->right = nullptr;
+					delete successor;
+					return true;
+				}
+
+				if (successor->right == nullptr)
+				{
+					node->key = successor->key;
+					node->position = successor->position;
+					successor->parent->left = nullptr;
+					delete successor;
+					return true;
+				}
+				else
+				{
+					node->key = successor->key;
+					node->position = successor->position;
+					successor->parent->left = successor->right;
+					successor->right->parent = successor->parent;
+					delete successor;
+					return true;
+				}
+			}
+		}
+
+		void clear_(node_ptr node)
+		{
+			if (node != nullptr)
+			{
+				clear_(node->left);
+				clear_(node->right);
+				delete node;
 			}
 		}
 
@@ -274,6 +464,7 @@ namespace vbt
 		template <class U>
 		void insert(U&& x, const sf::Vector2f& position = sf::Vector2f(0.f, 0.f))
 		{
+			++size;
 			if (root == nullptr)
 			{
 				root = new VisualBinaryNode<T>(std::forward<U>(x), position, this->font);
@@ -310,8 +501,27 @@ namespace vbt
 			return text;
 		}
 
-		void update(const float& deltatime)
+		void update(const float& deltatime, std::string& alert)
 		{
+			if (status.status == Status::Search)
+			{
+				if (status.time <= 0.f)
+				{
+					this->searchRecursive(status.actual_node, status.x, alert);
+					status.time = ANIMATION_SPEED;
+				}
+				else
+					status.time -= deltatime;
+			}
+			else
+			{
+				if (status.time <= 0.f)
+					status.clear();
+				else
+					status.time -= deltatime;
+			}
+
+
 			this->repositioning(this->depth(), this->root);
 			Iterator it = this->begin();
 			for (; it != this->end(); ++it)
@@ -320,6 +530,53 @@ namespace vbt
 				temp->update(deltatime);
 			}
 		}
+
+		void search(const T& x)
+		{
+			status.clear();
+			status.status = Status::Search;
+			status.actual_node = root;
+			status.x = x;
+		}
+
+		T minimum()
+		{
+			if (root == nullptr)
+				return 0;
+			node_ptr temp = root;
+			while (temp->left)
+				temp = temp->left;
+			return temp->key;
+		}
+
+		T maximum()
+		{
+			if (root == nullptr)
+				return 0;
+			node_ptr temp = root;
+			while (temp->right)
+				temp = temp->right;
+			return temp->key;
+		}
+
+		bool remove(const T& key)
+		{
+			return remove_(this->root, key);
+		}
+
+		void clear()
+		{
+			this->clear_(root);
+			root = nullptr;
+			this->size = 0;
+		}
+
+		int getSize()
+		{
+			return this->size;
+		}
+
+		node_ptr getRoot() { return this->root; }
 
 		void draw(sf::RenderWindow& window) { this->draw_(window, root); }
 
