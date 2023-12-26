@@ -155,7 +155,7 @@ int main()
         {
             if (validateText(inputCharText))
             {
-                vbt.insert(std::stoi(inputCharText));
+                vbt.insert(std::stoi(inputCharText), viewPosition);
                 alert = "Added: " + std::string(inputCharText);
             }
                 
@@ -178,16 +178,8 @@ int main()
         ImGui::NextColumn();
         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 0.0f, 1.0f));
         if (ImGui::Button("Search"))
-        {
             if (validateText(inputCharText))
-            {
                 vbt.search(std::stoi(inputCharText));
-                /*if (vbt.search(std::stoi(inputCharText)))
-                    alert = "Found: " + std::string(inputCharText);
-                else
-                    alert = "Not found: " + std::string(inputCharText);*/
-            }
-        }
         ImGui::PopStyleColor();
         ImGui::NextColumn();
         if (ImGui::Button("Clear"))
