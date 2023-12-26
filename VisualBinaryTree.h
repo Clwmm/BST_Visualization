@@ -74,22 +74,14 @@ namespace vbt
 
 		void draw(sf::RenderWindow& window)
 		{
+			circle.setPosition(position);
 			if (this->status == Status::Search)
-			{
-				circle.setPosition(position);
 				circle.setFillColor(sf::Color::Yellow);
-				circle.setRadius(CIRCLE_SIZE);
-				circle.setOrigin(CIRCLE_SIZE, CIRCLE_SIZE);
-				window.draw(circle);
-			}
 			else
-			{
-				circle.setPosition(position);
 				circle.setFillColor(sf::Color::White);
-				circle.setRadius(CIRCLE_SIZE);
-				circle.setOrigin(CIRCLE_SIZE, CIRCLE_SIZE);
-				window.draw(circle);
-			}
+			circle.setRadius(CIRCLE_SIZE);
+			circle.setOrigin(CIRCLE_SIZE, CIRCLE_SIZE);
+			window.draw(circle);
 			
 
 			circle.setPosition(position);
