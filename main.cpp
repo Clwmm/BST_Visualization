@@ -7,7 +7,10 @@
 #include "imgui.h"
 #include "imgui-SFML.h"
 
+// VBT
 #include "VisualBinaryTree.h"
+
+// STD
 #include <sstream>
 
 // VALIDATING INSERT TEXT
@@ -58,7 +61,7 @@ int main()
 
     // VISUAL BINARY TREE INIT
     vbt::VisualBinaryTree<int> vbt(font);
-    vbt.insert(50);
+    /*vbt.insert(50);
     vbt.insert(25);
     vbt.insert(75);
     vbt.insert(10);
@@ -72,7 +75,7 @@ int main()
     vbt.insert(55);
     vbt.insert(65);
     vbt.insert(80);
-    vbt.insert(95);
+    vbt.insert(95);*/
 
     // USED TEXT
     std::string alert = "";
@@ -121,21 +124,18 @@ int main()
         ImGui::Begin("Visual Binary Tree");
         ImGui::InputText("##", inputCharText, IM_ARRAYSIZE(inputCharText));
         ImGui::Columns(4);
+
+        // INSERT COLUMN 1
         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.6f, 0.98f, 1.0f, 1.0f));
         if (ImGui::Button("Insert"))
-        {
             if (validateText(inputCharText))
-            {
                 vbt.insert(std::stoi(inputCharText), viewPosition);
-                alert = "Added: " + std::string(inputCharText);
-            }
-                
-        }
-            
         ImGui::PopStyleColor();
+
+        // DELETE COLUMN 2
         ImGui::NextColumn();
         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
-        if (ImGui::Button("Delete"))
+        /*if (ImGui::Button("Delete"))
         {
             if (validateText(inputCharText))
             {
@@ -144,14 +144,21 @@ int main()
                 else
                     alert = "Not found: " + std::string(inputCharText);
             }
-        }
+        }*/
+        if (ImGui::Button("Delete"))
+            if (validateText(inputCharText))
+                vbt.remove(std::stoi(inputCharText));
         ImGui::PopStyleColor();
+
+        // SEARCH COLUMN 3
         ImGui::NextColumn();
         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 0.0f, 1.0f));
         if (ImGui::Button("Search"))
             if (validateText(inputCharText))
                 vbt.search(std::stoi(inputCharText));
         ImGui::PopStyleColor();
+
+        // CLEAR COLUMN 4
         ImGui::NextColumn();
         if (ImGui::Button("Clear"))
         {
