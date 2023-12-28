@@ -568,6 +568,19 @@ namespace vbt
 			return this->size;
 		}
 
+		float getWidth()
+		{
+			float sum = 0;
+			for (int n = this->depth(); n >= 1; --n)
+				sum += std::pow(static_cast<float>(n), 2.f) * OFFSET_X_MULTI;
+			return sum * 2;
+		}
+
+		float getHeight()
+		{
+			return static_cast<float>(this->depth()) * OFFSET_Y;
+		}
+
 		node_ptr getRoot() { return this->root; }
 
 		void draw(sf::RenderWindow& window) { this->draw_(window, root); }

@@ -10,25 +10,7 @@
 #include "VisualBinaryTree.h"
 #include <sstream>
 
-
-float viewSize = 150.f;
-float nextViewSize = 0.f;
-sf::Vector2f viewPosition(0.f, 0.f);
-sf::Vector2f nextViewPosition(0.f, 0.f);
-
-float getSizeX(int maxDepth)
-{
-    float sum = 0;
-    for (int n = maxDepth; n >= 1; --n)
-        sum += std::pow(static_cast<float>(n), 2.f) * vbt::OFFSET_X_MULTI;
-    return sum * 2;
-}
-
-float getSizeY(int maxDepth)
-{
-    return static_cast<float>(maxDepth) * vbt::OFFSET_Y;
-}
-
+// VALIDATING INSERT TEXT
 bool validateText(const char* input)
 {
     if (*input == '\0')
@@ -44,33 +26,37 @@ bool validateText(const char* input)
 
 int main()
 {
+    // SFML WINDOW
     sf::RenderWindow window(sf::VideoMode(1100, 1100), "Window Title");
     
+    // IMGUI WINDOW
     ImGui::SFML::Init(window);
-
     ImGuiIO& io = ImGui::GetIO();
     io.FontGlobalScale = 2.f;
 
+    // SETTINGS
+    float viewSize = 150.f;
+    float nextViewSize = 0.f;
+    sf::Vector2f viewPosition(0.f, 0.f);
+    sf::Vector2f nextViewPosition(0.f, 0.f);
+
+    // VIEW SETTING
     sf::View view(viewPosition, sf::Vector2f(viewSize, viewSize));
     window.setView(view);
 
+    // FONT INIT
     sf::Font font;
     if (!font.loadFromFile("res/font.ttf")) {
         std::cerr << "Cannot load font.ttf" << std::endl;
         exit(EXIT_FAILURE);
     }
 
+    // TIME
     sf::Clock clock;
     sf::Clock imguiClock;
-    std::string alert = "";
     float deltatime = 0.f;
 
-    sf::Text insertText;
-    insertText.setFont(font);
-    insertText.setCharacterSize(78);
-    insertText.setFillColor(sf::Color::White);
-    insertText.setPosition(15.f, -15.f);
-
+    // VISUAL BINARY TREE INIT
     vbt::VisualBinaryTree<int> vbt(font);
     vbt.insert(50);
     vbt.insert(25);
@@ -88,20 +74,21 @@ int main()
     vbt.insert(80);
     vbt.insert(95);
 
-
+    // USED TEXT
+    std::string alert = "";
     std::string getLineStr;
     std::string word;
-
-    std::string insertWord;
-    int insertKey = 0;
-
     static char inputCharText[3] = "";
 
+    // DELTATIME INIT
     deltatime = clock.restart().asSeconds();
 
     while (window.isOpen())
     {
+        // CALCULATING DELTATIME
         deltatime = clock.restart().asSeconds();
+
+        // HANDLING EVENTS
         sf::Event event;
         while (window.pollEvent(event))
         {
@@ -127,6 +114,8 @@ int main()
                 break;
             }
         }
+
+        // BUILDING AND UPDATING IMGUI
         ImGui::SFML::Update(window, imguiClock.restart());
 
         ImGui::Begin("Visual Binary Tree");
@@ -173,7 +162,6 @@ int main()
             
         ImGui::Text(alert.c_str());
 
-
         std::string temp;
         temp = "Size: " + std::to_string(vbt.getSize());
         ImGui::Text(temp.c_str());
@@ -187,8 +175,11 @@ int main()
         ImGui::Text(vbt.inorder().c_str());
         ImGui::End();
 
+
+        // UPDATING VISUAL BINARY TREE
         vbt.update(deltatime, alert);
 
+        // VIEW POSITION AND SIZE UPDATING
         if (vbt.getRoot())
         {
             sf::Vector2f dir = vbt.getRoot()->position - viewPosition;
@@ -203,12 +194,12 @@ int main()
 
             view.setCenter(viewPosition);
         }
-        
-        nextViewSize = std::max(getSizeX(vbt.depth()), getSizeY(vbt.depth())) + 100.f;
+        nextViewSize = std::max(vbt.getWidth(), vbt.getHeight()) + 100.f;
         viewSize += (nextViewSize - viewSize) * deltatime;
         view.setSize(sf::Vector2f(viewSize, viewSize));
         window.setView(view);
 
+        // DRAWING
         window.clear(sf::Color(18, 33, 43));
         vbt.draw(window);
         ImGui::SFML::Render(window);
