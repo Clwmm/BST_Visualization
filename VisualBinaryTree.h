@@ -13,8 +13,8 @@ namespace vbt
 	constexpr float CIRCLE_SIZE = 23.f;
 	constexpr float OFFSET_X_MULTI = 15.f;
 	constexpr float OFFSET_Y = 80.f;
-	constexpr float MOVE_SPEED = 100.f;
-	constexpr float ANIMATION_SPEED = 0.8f;
+	constexpr float MOVE_SPEED = 200.f;
+	constexpr float ANIMATION_SPEED = 0.5f;
 
 	enum class Status
 	{
@@ -94,7 +94,7 @@ namespace vbt
 				circle.setFillColor(sf::Color::Yellow);
 				break;
 			case Status::Insert:
-				circle.setFillColor(sf::Color(153, 250, 255));
+				circle.setFillColor(sf::Color::Green);
 				break;
 			}
 
@@ -178,38 +178,6 @@ namespace vbt
 				node->right->repositioning = true;
 				this->repositioning(depth - 1, node->right);
 			}
-		}
-
-		template <class U>
-		void insert_left(U&& x, node_ptr node, node_ptr parent)
-		{
-			if (node == nullptr)
-			{
-				node = new VisualBinaryNode<T>(std::forward<U>(x), sf::Vector2f(parent->position.x, parent->position.y), this->font);
-				parent->left = node;
-				node->parent = parent;
-				return;
-			}
-			if (x >= node->key)
-				this->insert_right(std::forward<U>(x), node->right, node);
-			else
-				this->insert_left(std::forward<U>(x), node->left, node);
-		}
-
-		template <class U>
-		void insert_right(U&& x, node_ptr node, node_ptr parent)
-		{
-			if (node == nullptr)
-			{
-				node = new VisualBinaryNode<T>(std::forward<U>(x), sf::Vector2f(parent->position.x, parent->position.y), this->font);
-				parent->right = node;
-				node->parent = parent;
-				return;
-			}
-			if (x >= node->key)
-				this->insert_right(std::forward<U>(x), node->right, node);
-			else
-				this->insert_left(std::forward<U>(x), node->left, node);
 		}
 
 		void insert_right_visual(const T& key, node_ptr node, node_ptr parent)
@@ -296,6 +264,7 @@ namespace vbt
 					status.status = Status::None;
 					this->remove_visual(node);
 					alert = "Deleted: " + std::to_string(key);
+					--size;
 					return;
 				}
 				break;
@@ -307,7 +276,6 @@ namespace vbt
 						root = new VisualBinaryNode<T>(key, status.position, this->font);
 					else
 					{
-						status.status = Status::None;
 						switch (status.side)
 						{
 						case Side::Left:
@@ -320,7 +288,9 @@ namespace vbt
 							break;
 						}
 					}
+					status.status = Status::None;
 					alert = "Added: " + std::to_string(key);
+					++size;
 					return;
 				}
 				else
@@ -344,34 +314,6 @@ namespace vbt
 				status.actual_node = node->right;
 			}
 				
-		}
-
-		void searchRecursive(node_ptr node, const T& x, std::string& alert)
-		{
-			if (status.previous_node)
-				status.previous_node->status = Status::None;
-
-			if (node != nullptr)
-				node->status = Status::Search;
-			else
-			{
-				status.status = Status::None;
-				alert = "Not found: " + std::to_string(x);
-				return;
-			}
-			if (node->key == x)
-			{
-				status.status = Status::None;
-				alert = "Found: " + std::to_string(x);
-				return;
-			}
-
-			status.previous_node = node;
-
-			if (x < node->key)
-				status.actual_node = node->left;
-			else
-				status.actual_node = node->right;
 		}
 
 		void remove_visual(node_ptr node)
@@ -467,113 +409,6 @@ namespace vbt
 					successor->right->parent = successor->parent;
 					delete successor;
 					return;
-				}
-			}
-		}
-
-		bool remove_(node_ptr node, const T& key)
-		{
-			if (node == nullptr)
-				return false;
-
-			if (node->key > key)
-				return remove_(node->left, key);
-			if (node->key < key)
-				return remove_(node->right, key);
-
-			--size;
-
-			// ONLY ONE CHILD EXISTS
-			if (node->left == nullptr && node->right != nullptr)
-			{
-				node_ptr right = node->right;
-				if (node == root)
-				{
-					right->parent = nullptr;
-					root = right;
-					delete node;
-					return true;
-				}
-				right->parent = node->parent;
-				if (node->parent->right == node)
-					node->parent->right = right;
-				else
-					node->parent->left = right;
-				delete node;
-				return true;
-			}
-			else if (node->right == nullptr && node->left != nullptr)
-			{
-				node_ptr left = node->left;
-				if (node == root)
-				{
-					left->parent = nullptr;
-					root = left;
-					delete node;
-					return true;
-				}
-				left->parent = node->parent;
-				if (node->parent->right == node)
-					node->parent->right = left;
-				else
-					node->parent->left = left;
-				delete node;
-				return true;
-			}
-			// NODE IS A LEAF
-			else if (node->right == nullptr && node->left == nullptr)
-			{
-				if (node == root)
-				{
-					delete node;
-					root = nullptr;
-					return true;
-				}
-				if (node->parent->right == node)
-					node->parent->right = nullptr;
-				else
-					node->parent->left = nullptr;
-				delete node;
-				return true;
-			}
-			// NODE HAVE BOTH CHILDS
-			else
-			{
-				Iterator it(node);
-				++it;
-				node_ptr successor = *it;
-				
-				if (successor == node->right)
-				{
-					node->key = successor->key;
-					node->position = successor->position;
-					if (successor->right)
-					{
-						node->right = successor->right;
-						node->right->parent = node;
-					}
-					else
-						node->right = nullptr;
-					delete successor;
-					return true;
-				}
-
-				if (successor->right == nullptr)
-				{
-					node->key = successor->key;
-					node->position = successor->position;
-					successor->parent->left = nullptr;
-					delete successor;
-					return true;
-				}
-				else
-				{
-					node->key = successor->key;
-					node->position = successor->position;
-					successor->parent->left = successor->right;
-					successor->right->parent = successor->parent;
-					delete successor;
-					return true;
 				}
 			}
 		}
@@ -676,17 +511,6 @@ namespace vbt
 			status.actual_node = root;
 			status.x = x;
 			status.position = position;
-			/*++size;
-			if (root == nullptr)
-			{
-				root = new VisualBinaryNode<T>(std::forward<U>(x), position, this->font);
-				return;
-			}
-			if (x >= root->key)
-				this->insert_right(std::forward<U>(x), root->right, root);
-			else
-				this->insert_left(std::forward<U>(x), root->left, root);*/
-
 		}
 
 		int depth() { return this->depth_(root); }
@@ -716,16 +540,6 @@ namespace vbt
 		{
 			switch (status.status)
 			{
-			/*case Status::Search:
-				if (status.time <= 0.f)
-				{
-					this->searchRecursive(status.actual_node, status.x, alert);
-					status.time = ANIMATION_SPEED;
-				}
-				else
-					status.time -= deltatime;
-				break;*/
-
 			case Status::None:
 				if (status.time <= 0.f)
 					status.clear();
@@ -788,7 +602,6 @@ namespace vbt
 			status.actual_node = root;
 			status.x = key;
 			return;
-			//return remove_(this->root, key);
 		}
 
 		void clear()

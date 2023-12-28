@@ -126,7 +126,7 @@ int main()
         ImGui::Columns(4);
 
         // INSERT COLUMN 1
-        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.6f, 0.98f, 1.0f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.f, 1.f, 0.f, 1.0f));
         if (ImGui::Button("Insert"))
             if (validateText(inputCharText))
                 vbt.insert(std::stoi(inputCharText), viewPosition);
@@ -135,16 +135,6 @@ int main()
         // DELETE COLUMN 2
         ImGui::NextColumn();
         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
-        /*if (ImGui::Button("Delete"))
-        {
-            if (validateText(inputCharText))
-            {
-                if (vbt.remove(std::stoi(inputCharText)))
-                    alert = "Removed: " + std::string(inputCharText);
-                else
-                    alert = "Not found: " + std::string(inputCharText);
-            }
-        }*/
         if (ImGui::Button("Delete"))
             if (validateText(inputCharText))
                 vbt.remove(std::stoi(inputCharText));
