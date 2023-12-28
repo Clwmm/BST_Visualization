@@ -8,35 +8,25 @@
 #include "imgui-SFML.h"
 
 #include "VisualBinaryTree.h"
-#include <iostream>
 #include <sstream>
 
-sf::CircleShape circle;
-sf::Text text;
-sf::Vertex line[2];
 
 float viewSize = 150.f;
 float nextViewSize = 0.f;
 sf::Vector2f viewPosition(0.f, 0.f);
 sf::Vector2f nextViewPosition(0.f, 0.f);
-int maxDepth = 0;
 
-constexpr float offset_x_multi = 15.f;
-constexpr float offset_y = 80.f;
-
-constexpr float circle_size = 22.f;
-
-float getSizeX()
+float getSizeX(int maxDepth)
 {
     float sum = 0;
     for (int n = maxDepth; n >= 1; --n)
-        sum += std::pow(static_cast<float>(n), 2.f) * offset_x_multi;
+        sum += std::pow(static_cast<float>(n), 2.f) * vbt::OFFSET_X_MULTI;
     return sum * 2;
 }
 
-float getSizeY()
+float getSizeY(int maxDepth)
 {
-    return static_cast<float>(maxDepth) * offset_y;
+    return static_cast<float>(maxDepth) * vbt::OFFSET_Y;
 }
 
 bool validateText(const char* input)
@@ -80,14 +70,6 @@ int main()
     insertText.setCharacterSize(78);
     insertText.setFillColor(sf::Color::White);
     insertText.setPosition(15.f, -15.f);
-
-    text.setFont(font);
-    text.setCharacterSize(24);
-    text.setFillColor(sf::Color::White);
-
-    circle.setFillColor(sf::Color::White);
-    circle.setRadius(10.f);
-    circle.setOrigin(10.f, 10.f);
 
     vbt::VisualBinaryTree<int> vbt(font);
     vbt.insert(50);
@@ -207,8 +189,6 @@ int main()
 
         vbt.update(deltatime, alert);
 
-        maxDepth = vbt.depth();
-
         if (vbt.getRoot())
         {
             sf::Vector2f dir = vbt.getRoot()->position - viewPosition;
@@ -224,7 +204,7 @@ int main()
             view.setCenter(viewPosition);
         }
         
-        nextViewSize = std::max(getSizeX(), getSizeY()) + 100.f;
+        nextViewSize = std::max(getSizeX(vbt.depth()), getSizeY(vbt.depth())) + 100.f;
         viewSize += (nextViewSize - viewSize) * deltatime;
         view.setSize(sf::Vector2f(viewSize, viewSize));
         window.setView(view);
