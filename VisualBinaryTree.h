@@ -136,6 +136,7 @@ namespace vbt
 			Side side = Side::None;
 			node_ptr actual_node = nullptr;
 			node_ptr previous_node = nullptr;
+			node_ptr delete_node = nullptr;
 			sf::Vector2f position;
 			T x;
 			float time = 0.f;
@@ -262,6 +263,9 @@ namespace vbt
 				if (node->key == key)
 				{
 					status.status = Status::None;
+					status.delete_node = node;
+					return;
+
 					this->remove_visual(node);
 					alert = "Deleted: " + std::to_string(key);
 					--size;
@@ -542,7 +546,17 @@ namespace vbt
 			{
 			case Status::None:
 				if (status.time <= 0.f)
+				{
+					if (status.delete_node)
+					{
+						alert = "Deleted: " + std::to_string(status.delete_node->key);
+						this->remove_visual(status.delete_node);
+						status.delete_node = nullptr;
+						--size;
+					}
 					status.clear();
+				}
+					
 				else
 					status.time -= deltatime;
 				break;
