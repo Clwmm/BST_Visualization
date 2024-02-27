@@ -30,7 +30,8 @@ bool validateText(const char* input)
 int main()
 {
     // SFML WINDOW
-    sf::RenderWindow window(sf::VideoMode(1100, 1100), "Window Title");
+    sf::RenderWindow window(sf::VideoMode(1100, 1100), "Visual Binary Tree", sf::Style::Titlebar | sf::Style::Close);
+    window.setFramerateLimit(120);
     
     // IMGUI WINDOW
     ImGui::SFML::Init(window);
