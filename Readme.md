@@ -18,4 +18,4 @@ This project aims to provide a visual representation of binary search trees usin
 
 ## Screenshots:
 
-![Gif](https://github.com/Clwmm/BST_Visualization/blob/master/1.gif)
+![Photo](https://github.com/Clwmm/BST_Visualization/blob/master/1.gif)
